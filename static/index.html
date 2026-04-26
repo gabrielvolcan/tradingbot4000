@@ -911,7 +911,15 @@ input:focus,select:focus{border-color:var(--accent)}
             <span>Watchlist</span>
             <span id="mkt-sym-count">0</span>
           </div>
-          <div id="mkt-watchlist">
+          <div style="padding:6px 8px;border-bottom:1px solid var(--border)">
+            <input id="mkt-search" type="text" placeholder="Buscar símbolo..."
+              style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);
+                     padding:5px 8px;font-family:var(--mono);font-size:11px;outline:none;"
+              oninput="filterWatchlist(this.value)"
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--border)'"/>
+          </div>
+          <div id="mkt-watchlist" style="overflow-y:auto;flex:1">
             <div class="no-data">Sin símbolos</div>
           </div>
         </div>
@@ -1773,6 +1781,33 @@ async function doTrade(type){
   if(res?._error){ toast('❌ ' + res._error); return; }
   if(res?.ticket){ toast(`✅ ${type} · #${res.ticket}`); refresh(); }
   else toast('❌ Error al ejecutar la operación');
+}
+
+function filterWatchlist(q){
+  const term = q.toLowerCase().trim();
+  const filtered = term
+    ? _watchlistCache.filter(s =>
+        s.symbol.toLowerCase().includes(term) ||
+        (s.description||'').toLowerCase().includes(term))
+    : _watchlistCache;
+
+  document.getElementById('mkt-sym-count').textContent = filtered.length;
+  const el = document.getElementById('mkt-watchlist');
+  if(!filtered.length){ el.innerHTML = '<div class="no-data">Sin resultados</div>'; return; }
+  el.innerHTML = filtered.map(s => {
+    const id = s.symbol.replace(/\s/g,'_');
+    const px = s.bid ? s.bid.toFixed(s.digits) : '—';
+    return `
+    <div class="sym-row ${MKT_SYM===s.symbol?'active':''}" onclick="selectMktSym('${s.symbol}','${s.description}')">
+      <div>
+        <div class="sr-name">${symShort(s.symbol)}</div>
+        <div class="sr-sub dim" style="font-size:9px">${s.description||s.symbol}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="sr-px bright mono" id="wl-px-${id}">${px}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function onMarketTabOpen(){ buildWatchlist(); }
