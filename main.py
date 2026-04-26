@@ -102,11 +102,8 @@ def get_files_dir() -> str | None:
 
 
 def cfg_path(magic: int) -> str | None:
-    # Usar la carpeta del terminal donde se encontró el mreg del bot
-    bot = next((b for b in BOTS.values() if b["magic"] == magic), None)
-    d = bot.get("files_dir") if bot else None
-    if not d:
-        d = get_files_dir()
+    # Siempre escribir en el terminal MT5 conectado (donde el EA lo lee)
+    d = get_files_dir()
     return os.path.join(d, f"mbot_{magic}.cfg") if d else None
 
 
