@@ -463,6 +463,7 @@ def get_account(user=Depends(get_current_user)):
     info = mt5.account_info()
     if not info:
         raise HTTPException(503, "Sin datos de cuenta")
+    modes = {0: "DEMO", 1: "CONCURSO", 2: "REAL"}
     return {
         "login":       info.login,
         "server":      info.server,
@@ -472,6 +473,9 @@ def get_account(user=Depends(get_current_user)):
         "margin_free": round(info.margin_free, 2),
         "profit":      round(info.profit, 2),
         "leverage":    info.leverage,
+        "trade_mode":  modes.get(info.trade_mode, "DEMO"),
+        "name":        info.name,
+        "company":     info.company,
     }
 
 
@@ -540,6 +544,7 @@ def get_state(user=Depends(get_current_user)):
     if connected:
         info = mt5.account_info()
         if info:
+            modes = {0: "DEMO", 1: "CONCURSO", 2: "REAL"}
             account = {
                 "login":       info.login,
                 "server":      info.server,
@@ -548,6 +553,9 @@ def get_state(user=Depends(get_current_user)):
                 "margin_free": round(info.margin_free, 2),
                 "profit":      round(info.profit, 2),
                 "leverage":    info.leverage,
+                "trade_mode":  modes.get(info.trade_mode, "DEMO"),
+                "name":        info.name,
+                "company":     info.company,
             }
 
         raw_pos = mt5.positions_get()

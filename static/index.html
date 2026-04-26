@@ -756,6 +756,8 @@ input:focus,select:focus{border-color:var(--accent)}
       <div id="conn-dot" class="offline-dot"></div>
       <span id="conn-txt">OFFLINE</span>
       <span id="clock" class="mono">--:--:--</span>
+      <span id="acct-badge" style="display:none;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.06em"></span>
+      <span id="acct-login" style="display:none;font-size:10px;font-family:var(--mono);color:var(--text-dim)"></span>
       <div id="bal-session" class="mono" style="display:none">
         BAL <span id="s-bal" class="bright">--</span>
         EQ <span id="s-eq" class="up">--</span>
@@ -802,7 +804,7 @@ input:focus,select:focus{border-color:var(--accent)}
     <div class="stat">
       <div class="stat-label">Balance</div>
       <div class="stat-value" id="st-bal">—</div>
-      <div class="stat-sub">cuenta MT5</div>
+      <div class="stat-sub" id="st-acct-sub">cuenta MT5</div>
     </div>
     <div class="stat">
       <div class="stat-label">Equity</div>
@@ -1286,13 +1288,27 @@ function rTopBar(){
       ${pl}
     </div>`;
   }).join('');
-  // Balance
+  // Balance + account badge
+  const badge  = document.getElementById('acct-badge');
+  const aLogin = document.getElementById('acct-login');
   if(S.account){
     document.getElementById('bal-session').style.display = '';
     document.getElementById('s-bal').textContent = '$' + fmtN(S.account.balance);
     const eq = document.getElementById('s-eq');
     eq.textContent = '$' + fmtN(S.account.equity);
     eq.style.color = S.account.profit >= 0 ? 'var(--buy)' : 'var(--sell)';
+    // Demo / Real badge
+    const isReal = S.account.trade_mode === 'REAL';
+    badge.textContent  = S.account.trade_mode ?? 'DEMO';
+    badge.style.display = '';
+    badge.style.background = isReal ? 'rgba(38,166,154,.18)' : 'rgba(255,152,0,.18)';
+    badge.style.color      = isReal ? 'var(--buy)' : '#ff9800';
+    badge.style.border     = `1px solid ${isReal ? 'var(--buy)' : '#ff9800'}`;
+    aLogin.textContent  = '#' + S.account.login;
+    aLogin.style.display = '';
+  } else {
+    badge.style.display  = 'none';
+    aLogin.style.display = 'none';
   }
 }
 
@@ -1321,6 +1337,9 @@ function rStatsBar(){
 
   if(S.account){
     document.getElementById('st-bal').textContent = '$' + fmtN(S.account.balance);
+    const acctSub = document.getElementById('st-acct-sub');
+    const isReal  = S.account.trade_mode === 'REAL';
+    acctSub.innerHTML = `#${S.account.login} · <span style="color:${isReal?'var(--buy)':'#ff9800'};font-weight:700">${S.account.trade_mode??'DEMO'}</span>`;
     const eq = document.getElementById('st-eq');
     eq.textContent = '$' + fmtN(S.account.equity);
     eq.style.color = S.account.profit >= 0 ? 'var(--buy)' : 'var(--sell)';
