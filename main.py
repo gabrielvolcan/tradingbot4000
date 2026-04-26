@@ -102,7 +102,11 @@ def get_files_dir() -> str | None:
 
 
 def cfg_path(magic: int) -> str | None:
-    d = get_files_dir()
+    # Usar la carpeta del terminal donde se encontró el mreg del bot
+    bot = next((b for b in BOTS.values() if b["magic"] == magic), None)
+    d = bot.get("files_dir") if bot else None
+    if not d:
+        d = get_files_dir()
     return os.path.join(d, f"mbot_{magic}.cfg") if d else None
 
 
@@ -205,12 +209,13 @@ def discover_bots():
             ea_key = str(data.get("EA", f"bot_{magic}")).lower().strip()
             icon, color = _BOT_ICONS.get(ea_key, ("🤖", "#7c3aed"))
             found[str(magic)] = {
-                "name":   str(data.get("NAME", f"Bot {magic}")),
-                "magic":  magic,
-                "symbol": str(data.get("SYMBOL", "")),
-                "icon":   icon,
-                "color":  color,
-                "ea":     ea_key,
+                "name":      str(data.get("NAME", f"Bot {magic}")),
+                "magic":     magic,
+                "symbol":    str(data.get("SYMBOL", "")),
+                "icon":      icon,
+                "color":     color,
+                "ea":        ea_key,
+                "files_dir": d,
             }
     BOTS.clear()
     BOTS.update(found)
