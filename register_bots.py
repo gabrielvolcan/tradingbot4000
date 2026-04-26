@@ -34,16 +34,16 @@ files_dir = os.path.join(info.data_path, "MQL5", "Files")
 os.makedirs(files_dir, exist_ok=True)
 print(f"Carpeta MT5 Files: {files_dir}\n")
 
-# Recopilar magic numbers desde posiciones abiertas e historial de 7 dias
-seen = {}  # magic -> {symbol, name}
+# Recopilar magic numbers desde posiciones abiertas e historial de 30 dias
+seen = {}
 
 positions = mt5.positions_get()
 if positions:
     for p in positions:
-        if p.magic not in seen:
+        if p.magic and p.magic not in seen:
             seen[p.magic] = {"symbol": p.symbol, "source": "posicion activa"}
 
-from_dt = datetime.combine(date.today() - timedelta(days=7), datetime.min.time())
+from_dt = datetime.combine(date.today() - timedelta(days=30), datetime.min.time())
 deals = mt5.history_deals_get(from_dt, datetime.now())
 if deals:
     for d in deals:
@@ -53,34 +53,45 @@ if deals:
 mt5.shutdown()
 
 if not seen:
-    print("No se encontraron bots activos ni en historial reciente.")
-    print("Asegurate de que tus EAs tengan operaciones abiertas o recientes.")
+    print("No se encontraron bots en posiciones abiertas ni en historial de 30 dias.")
+    print("Asegurate de que tus EAs hayan tenido actividad reciente.")
     input("\nPresiona Enter para salir...")
     sys.exit(0)
 
 print(f"Se encontraron {len(seen)} bot(s):\n")
 created = 0
+reset = 0
 for magic, data in seen.items():
-    symbol  = data["symbol"]
-    source  = data["source"]
-    name    = f"Bot {magic}"
-    cfg_path = os.path.join(files_dir, f"mreg_{magic}.cfg")
+    symbol   = data["symbol"]
+    source   = data["source"]
+    name     = f"Bot {magic}"
+    mreg     = os.path.join(files_dir, f"mreg_{magic}.cfg")
+    mbot     = os.path.join(files_dir, f"mbot_{magic}.cfg")
 
-    # Si ya existe, no sobreescribir
-    if os.path.exists(cfg_path):
+    # Crear o actualizar mreg_*.cfg
+    if not os.path.exists(mreg):
+        with open(mreg, "w", encoding="utf-8") as f:
+            f.write(f"MAGIC={magic}\n")
+            f.write(f"NAME={name}\n")
+            f.write(f"SYMBOL={symbol}\n")
+            f.write("EA=mybot\n")
+            f.write("ENABLED=1\n")
+        print(f"  [creado]    magic={magic} | {symbol} ({source})")
+        created += 1
+    else:
         print(f"  [ya existe] magic={magic} | {symbol} ({source})")
-        continue
 
-    with open(cfg_path, "w", encoding="utf-8") as f:
-        f.write(f"MAGIC={magic}\n")
-        f.write(f"NAME={name}\n")
-        f.write(f"SYMBOL={symbol}\n")
-        f.write(f"EA=mybot\n")
-        f.write(f"ENABLED=1\n")
+    # Resetear mbot_*.cfg si tiene ENABLED=0 (estado pausado viejo)
+    if os.path.exists(mbot):
+        with open(mbot, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+        if "ENABLED=0" in content:
+            new_content = content.replace("ENABLED=0", "ENABLED=1")
+            with open(mbot, "w", encoding="utf-8") as f:
+                f.write(new_content)
+            print(f"  [activado]  magic={magic} | estado reseteado a ACTIVO")
+            reset += 1
 
-    print(f"  [creado] magic={magic} | {symbol} ({source})")
-    created += 1
-
-print(f"\n{created} archivo(s) nuevo(s) creado(s).")
+print(f"\n{created} bot(s) nuevo(s) registrado(s), {reset} estado(s) reseteado(s).")
 print("\nReinicia start.bat para que el dashboard los detecte.")
 input("\nPresiona Enter para salir...")
