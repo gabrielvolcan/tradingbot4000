@@ -1,0 +1,21 @@
+# Datos personales — NO subir
+users.json
+secret.key
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# Cloudflare
+cloudflared.exe
+tunnel_config.yml
+tunnel_url.txt
+
+# Editor / OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
