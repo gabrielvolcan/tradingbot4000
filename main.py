@@ -175,30 +175,47 @@ def discover_bots():
     if now - _last_discover < 10:
         return
     _last_discover = now
-    d = get_files_dir()
-    if not d or not os.path.isdir(d):
-        return
     found = {}
-    for fname in os.listdir(d):
-        if not fname.startswith("mreg_") or not fname.endswith(".cfg"):
-            continue
-        data = read_cfg_file(os.path.join(d, fname))
-        try:
-            magic = int(data.get("MAGIC", 0))
-        except Exception:
-            continue
-        if not magic:
-            continue
-        ea_key = str(data.get("EA", f"bot_{magic}")).lower().strip()
-        icon, color = _BOT_ICONS.get(ea_key, ("🤖", "#7c3aed"))
-        found[str(magic)] = {          # clave = magic (único por instancia)
-            "name":   str(data.get("NAME", f"Bot {magic}")),
-            "magic":  magic,
-            "symbol": str(data.get("SYMBOL", "")),
-            "icon":   icon,
-            "color":  color,
-            "ea":     ea_key,          # tipo de EA para mapear BOT_SCHEMA
-        }
+
+    # 1. Bots registrados via mreg_*.cfg (EAs propios)
+    d = get_files_dir()
+    if d and os.path.isdir(d):
+        for fname in os.listdir(d):
+            if not fname.startswith("mreg_") or not fname.endswith(".cfg"):
+                continue
+            data = read_cfg_file(os.path.join(d, fname))
+            try:
+                magic = int(data.get("MAGIC", 0))
+            except Exception:
+                continue
+            if not magic:
+                continue
+            ea_key = str(data.get("EA", f"bot_{magic}")).lower().strip()
+            icon, color = _BOT_ICONS.get(ea_key, ("🤖", "#7c3aed"))
+            found[str(magic)] = {
+                "name":   str(data.get("NAME", f"Bot {magic}")),
+                "magic":  magic,
+                "symbol": str(data.get("SYMBOL", "")),
+                "icon":   icon,
+                "color":  color,
+                "ea":     ea_key,
+            }
+
+    # 2. Bots detectados desde posiciones abiertas (cualquier EA)
+    positions = mt5.positions_get()
+    if positions:
+        for p in positions:
+            key = str(p.magic)
+            if key not in found:
+                found[key] = {
+                    "name":   f"Bot {p.magic}" if p.magic else f"Manual ({p.symbol})",
+                    "magic":  p.magic,
+                    "symbol": p.symbol,
+                    "icon":   "🤖",
+                    "color":  "#7c3aed",
+                    "ea":     "",
+                }
+
     BOTS.clear()
     BOTS.update(found)
 
