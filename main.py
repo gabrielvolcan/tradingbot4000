@@ -198,8 +198,14 @@ def discover_bots():
         return
     _last_discover = now
     found = {}
+
+    # ── 1. mreg_*.cfg files (fuente principal — nombre, ea, ícono, color) ──────
     for d in _all_mt5_files_dirs():
-        for fname in os.listdir(d):
+        try:
+            files = os.listdir(d)
+        except OSError:
+            continue
+        for fname in files:
             if not fname.startswith("mreg_") or not fname.endswith(".cfg"):
                 continue
             data = read_cfg_file(os.path.join(d, fname))
@@ -221,6 +227,36 @@ def discover_bots():
                 "ea":        ea_key,
                 "files_dir": d,
             }
+
+    # ── 2. Autodetección desde MT5 (fallback si no hay mreg files) ─────────────
+    if mt5.terminal_info():
+        files_dir = get_files_dir() or ""
+
+        # Posiciones abiertas
+        positions = mt5.positions_get()
+        if positions:
+            for p in positions:
+                if p.magic and str(p.magic) not in found:
+                    found[str(p.magic)] = {
+                        "name": f"Bot {p.magic}", "magic": p.magic,
+                        "symbol": p.symbol, "icon": "🤖", "color": "#7c3aed",
+                        "ea": "", "files_dir": files_dir,
+                    }
+
+        # Historial de 30 días (detecta bots aunque no tengan posición abierta)
+        from_dt = datetime.combine(date.today() - timedelta(days=30), datetime.min.time())
+        deals = mt5.history_deals_get(from_dt, datetime.now())
+        if deals:
+            seen_magic = {deal.magic for deal in deals if deal.magic}
+            for magic in seen_magic:
+                if str(magic) not in found:
+                    sym = next((deal.symbol for deal in deals if deal.magic == magic), "")
+                    found[str(magic)] = {
+                        "name": f"Bot {magic}", "magic": magic,
+                        "symbol": sym, "icon": "🤖", "color": "#7c3aed",
+                        "ea": "", "files_dir": files_dir,
+                    }
+
     BOTS.clear()
     BOTS.update(found)
 
@@ -828,12 +864,36 @@ def get_watchlist(user=Depends(get_current_user)):
 @app.get("/api/debug", include_in_schema=False)
 def debug_info():
     dirs = _all_mt5_files_dirs()
-    result = {}
+    carpetas = {}
     for d in dirs:
-        files = os.listdir(d) if os.path.isdir(d) else []
-        mreg  = [f for f in files if f.startswith("mreg_") and f.endswith(".cfg")]
-        result[d] = {"existe": os.path.isdir(d), "mreg_files": mreg}
-    return {"bots_detectados": list(BOTS.keys()), "carpetas": result}
+        if not os.path.isdir(d):
+            carpetas[d] = {"existe": False, "mreg_files": {}}
+            continue
+        try:
+            all_files = os.listdir(d)
+        except OSError as e:
+            carpetas[d] = {"existe": True, "error": str(e), "mreg_files": {}}
+            continue
+        mreg_contents = {}
+        for f in all_files:
+            if f.startswith("mreg_") and f.endswith(".cfg"):
+                mreg_contents[f] = read_cfg_file(os.path.join(d, f))
+        carpetas[d] = {"existe": True, "mreg_files": mreg_contents}
+
+    connected = bool(mt5.terminal_info())
+    positions = []
+    if connected:
+        raw = mt5.positions_get()
+        if raw:
+            positions = [{"magic": p.magic, "symbol": p.symbol, "ticket": p.ticket} for p in raw]
+
+    return {
+        "mt5_conectado":    connected,
+        "files_dir_primario": get_files_dir(),
+        "bots_detectados":  {k: {"name": v["name"], "magic": v["magic"], "ea": v["ea"], "files_dir": v["files_dir"]} for k, v in BOTS.items()},
+        "posiciones_abiertas": positions,
+        "carpetas":         carpetas,
+    }
 
 
 # ── Static ─────────────────────────────────────────────────────────────────────
