@@ -209,13 +209,12 @@ def discover_bots():
             try:
                 magic = int(data.get("MAGIC", 0))
             except Exception:
-                continue
-            if not magic:
-                continue
-            ea_key = str(data.get("EA", f"bot_{magic}")).lower().strip()
+                magic = 0
+            key    = fname[5:-4]  # nombre del archivo sin mreg_ y .cfg
+            ea_key = str(data.get("EA", f"bot_{key}")).lower().strip()
             icon, color = _BOT_ICONS.get(ea_key, ("🤖", "#7c3aed"))
-            found[str(magic)] = {
-                "name":      str(data.get("NAME", f"Bot {magic}")),
+            found[key] = {
+                "name":      str(data.get("NAME", data.get("SYMBOL", f"Bot {key}"))),
                 "magic":     magic,
                 "symbol":    str(data.get("SYMBOL", "")),
                 "icon":      icon,

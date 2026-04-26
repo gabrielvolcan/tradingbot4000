@@ -36,20 +36,23 @@ os.makedirs(local_bots, exist_ok=True)
 print(f"Guardando en: {local_bots}\n")
 
 # Recopilar magic numbers desde posiciones abiertas e historial de 30 dias
+# La clave es magic si es != 0, o "sym_SYMBOL" si magic es 0
 seen = {}
 
 positions = mt5.positions_get()
 if positions:
     for p in positions:
-        if p.magic and p.magic not in seen:
-            seen[p.magic] = {"symbol": p.symbol, "source": "posicion activa"}
+        key = p.magic if p.magic else f"sym_{p.symbol.replace(' ','_')}"
+        if key not in seen:
+            seen[key] = {"magic": p.magic, "symbol": p.symbol, "source": "posicion activa"}
 
 from_dt = datetime.combine(date.today() - timedelta(days=30), datetime.min.time())
 deals = mt5.history_deals_get(from_dt, datetime.now())
 if deals:
     for d in deals:
-        if d.magic and d.magic not in seen:
-            seen[d.magic] = {"symbol": d.symbol, "source": "historial"}
+        key = d.magic if d.magic else f"sym_{d.symbol.replace(' ','_')}"
+        if key not in seen:
+            seen[key] = {"magic": d.magic, "symbol": d.symbol, "source": "historial"}
 
 mt5.shutdown()
 
@@ -62,12 +65,13 @@ if not seen:
 print(f"Se encontraron {len(seen)} bot(s):\n")
 created = 0
 reset = 0
-for magic, data in seen.items():
+for key, data in seen.items():
+    magic    = data["magic"]
     symbol   = data["symbol"]
     source   = data["source"]
-    name     = f"Bot {magic}"
-    mreg     = os.path.join(local_bots, f"mreg_{magic}.cfg")
-    mbot     = os.path.join(local_bots, f"mbot_{magic}.cfg")
+    name     = symbol if not magic else f"Bot {magic}"
+    mreg     = os.path.join(local_bots, f"mreg_{key}.cfg")
+    mbot     = os.path.join(local_bots, f"mbot_{key}.cfg")
 
     # Crear o actualizar mreg_*.cfg
     if not os.path.exists(mreg):
