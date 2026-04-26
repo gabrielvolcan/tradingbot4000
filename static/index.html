@@ -1089,7 +1089,9 @@ async function call(path, method='GET', body=null){
   try{
     const r = await fetch(API + path, opts);
     if(r.status === 401){ logout(); return null; }
-    return await r.json();
+    const data = await r.json();
+    if(!r.ok) return {_error: data?.detail || `Error ${r.status}`};
+    return data;
   } catch(e) {
     return null;
   }

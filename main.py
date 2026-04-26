@@ -650,7 +650,7 @@ def toggle_bot(bot_id: str, admin=Depends(require_admin)):
     actual = read_ctrl(bot["magic"])
     if actual != new_state:
         raise HTTPException(500, "Error crítico: el archivo no se pudo escribir. Verifica permisos.")
-    return {"enabled": new_state}
+    return {"ok": True, "enabled": new_state}
 
 
 @app.get("/api/bots/{bot_id}/config")
