@@ -776,6 +776,29 @@ def close_position(ticket: int, admin=Depends(require_admin)):
     return {"retcode": res.retcode, "comment": res.comment, "success": True}
 
 
+# ── Market Watch symbols ───────────────────────────────────────────────────────
+
+@app.get("/api/watchlist")
+def get_watchlist(user=Depends(get_current_user)):
+    ensure_mt5()
+    syms = mt5.symbols_get()
+    if not syms:
+        return []
+    result = []
+    for s in syms:
+        if not s.visible:
+            continue
+        tick = mt5.symbol_info_tick(s.name)
+        result.append({
+            "symbol": s.name,
+            "description": s.description,
+            "bid": tick.bid if tick else 0,
+            "ask": tick.ask if tick else 0,
+            "digits": s.digits,
+        })
+    return sorted(result, key=lambda x: x["symbol"])
+
+
 # ── Static ─────────────────────────────────────────────────────────────────────
 
 @app.get("/", include_in_schema=False)

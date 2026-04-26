@@ -1635,26 +1635,37 @@ async function closePos(ticket){
 let MKT_SYM = null, MKT_TF = 'M1';
 let _mktChart = null, _mktSeries = null, _mktTickTimer = null;
 
-function buildWatchlist(){
+let _watchlistCache = [];
+
+async function buildWatchlist(){
   if(!document.getElementById('tab-market').classList.contains('active')) return;
-  const bots = Object.values(S.bots);
-  const seen = new Set();
-  const syms = bots.filter(b => b.symbol && !seen.has(b.symbol) && seen.add(b.symbol))
-                   .map(b => ({ symbol: b.symbol, name: b.name }));
-  document.getElementById('mkt-sym-count').textContent = syms.length;
   const el = document.getElementById('mkt-watchlist');
-  if(!syms.length){ el.innerHTML = '<div class="no-data">Sin símbolos — inicia tus EAs en MT5</div>'; return; }
-  el.innerHTML = syms.map(s => `
-    <div class="sym-row ${MKT_SYM===s.symbol?'active':''}" onclick="selectMktSym('${s.symbol}','${s.name}')">
+  el.innerHTML = '<div class="no-data">Cargando símbolos...</div>';
+
+  const data = await call('/api/watchlist');
+  if(!data || data._error || !data.length){
+    el.innerHTML = '<div class="no-data">Sin símbolos en Market Watch</div>';
+    return;
+  }
+  _watchlistCache = data;
+  document.getElementById('mkt-sym-count').textContent = data.length;
+
+  el.innerHTML = data.map(s => {
+    const id = s.symbol.replace(/\s/g,'_');
+    const px = s.bid ? s.bid.toFixed(s.digits) : '—';
+    return `
+    <div class="sym-row ${MKT_SYM===s.symbol?'active':''}" onclick="selectMktSym('${s.symbol}','${s.description}')">
       <div>
         <div class="sr-name">${symShort(s.symbol)}</div>
-        <div class="sr-sub">${s.symbol}</div>
+        <div class="sr-sub dim" style="font-size:9px">${s.description||s.symbol}</div>
       </div>
-      <div>
-        <div class="sr-px bright" id="wl-px-${s.symbol.replace(/\s/g,'_')}">—</div>
+      <div style="text-align:right">
+        <div class="sr-px bright mono" id="wl-px-${id}">${px}</div>
       </div>
-    </div>`).join('');
-  if(!MKT_SYM && syms.length) selectMktSym(syms[0].symbol, syms[0].name);
+    </div>`;
+  }).join('');
+
+  if(!MKT_SYM && data.length) selectMktSym(data[0].symbol, data[0].description);
 }
 
 async function selectMktSym(symbol, name){
