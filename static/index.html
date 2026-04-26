@@ -1337,6 +1337,24 @@ function rBots(){
   const sub = document.getElementById('bots-sub-text');
   const isAdmin = MB_USER?.role === 'admin';
 
+  // Si no hay bots registrados pero hay posiciones, crear tarjetas desde posiciones
+  if(!entries.length && S.positions?.length){
+    const synth = {};
+    for(const p of S.positions){
+      const key = p.magic ? String(p.magic) : `manual_${p.ticket}`;
+      if(!synth[key]){
+        synth[key] = {
+          name: p.magic ? `Bot ${p.magic}` : `Manual (${p.symbol})`,
+          icon: '🤖', color: '#7c3aed', symbol: p.symbol, ea: '', enabled: true,
+          position: {ticket:p.ticket, profit:p.profit, type:p.type, volume:p.volume},
+          today: {pnl:0, ops:0, wins:0, losses:0}
+        };
+      }
+    }
+    Object.assign(S.bots, synth);
+    entries.push(...Object.entries(synth));
+  }
+
   if(!entries.length){
     el.innerHTML = '<div class="no-data">No se detectaron bots. Verifica que tus EAs estén corriendo en MT5.</div>';
     sub.textContent = '';
