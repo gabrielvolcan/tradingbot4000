@@ -232,7 +232,7 @@ def discover_bots():
     if mt5.terminal_info():
         files_dir = get_files_dir() or ""
 
-        # Posiciones abiertas
+        # Posiciones abiertas sin mreg (fallback: muestra bots con trade activo)
         positions = mt5.positions_get()
         if positions:
             for p in positions:
@@ -240,20 +240,6 @@ def discover_bots():
                     found[str(p.magic)] = {
                         "name": f"Bot {p.magic}", "magic": p.magic,
                         "symbol": p.symbol, "icon": "🤖", "color": "#7c3aed",
-                        "ea": "", "files_dir": files_dir,
-                    }
-
-        # Historial de 30 días (detecta bots aunque no tengan posición abierta)
-        from_dt = datetime.combine(date.today() - timedelta(days=30), datetime.min.time())
-        deals = mt5.history_deals_get(from_dt, datetime.now())
-        if deals:
-            seen_magic = {deal.magic for deal in deals if deal.magic}
-            for magic in seen_magic:
-                if str(magic) not in found:
-                    sym = next((deal.symbol for deal in deals if deal.magic == magic), "")
-                    found[str(magic)] = {
-                        "name": f"Bot {magic}", "magic": magic,
-                        "symbol": sym, "icon": "🤖", "color": "#7c3aed",
                         "ea": "", "files_dir": files_dir,
                     }
 
