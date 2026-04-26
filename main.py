@@ -174,11 +174,17 @@ _last_discover = 0.0
 
 
 def _all_mt5_files_dirs() -> list[str]:
-    """Devuelve todas las carpetas MQL5/Files de todos los terminales MT5 instalados."""
+    """Devuelve todas las carpetas donde buscar mreg_*.cfg."""
     dirs = []
+    # 1. Carpeta bots/ local del dashboard (la mas simple y portable)
+    local_bots = os.path.join(BASE, "bots")
+    if os.path.isdir(local_bots):
+        dirs.append(local_bots)
+    # 2. Terminal MT5 que Python conectó
     primary = get_files_dir()
-    if primary:
+    if primary and primary not in dirs:
         dirs.append(primary)
+    # 3. Todos los terminales MT5 instalados en AppData
     base = os.path.join(os.environ.get("APPDATA", ""), "MetaQuotes", "Terminal")
     if os.path.isdir(base):
         for entry in os.listdir(base):

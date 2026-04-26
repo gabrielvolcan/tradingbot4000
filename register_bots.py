@@ -30,9 +30,10 @@ if not info:
     input("\nPresiona Enter para salir...")
     sys.exit(1)
 
-files_dir = os.path.join(info.data_path, "MQL5", "Files")
-os.makedirs(files_dir, exist_ok=True)
-print(f"Carpeta MT5 Files: {files_dir}\n")
+# Carpeta local bots/ del dashboard (portable, funciona siempre)
+local_bots = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bots")
+os.makedirs(local_bots, exist_ok=True)
+print(f"Guardando en: {local_bots}\n")
 
 # Recopilar magic numbers desde posiciones abiertas e historial de 30 dias
 seen = {}
@@ -65,8 +66,8 @@ for magic, data in seen.items():
     symbol   = data["symbol"]
     source   = data["source"]
     name     = f"Bot {magic}"
-    mreg     = os.path.join(files_dir, f"mreg_{magic}.cfg")
-    mbot     = os.path.join(files_dir, f"mbot_{magic}.cfg")
+    mreg     = os.path.join(local_bots, f"mreg_{magic}.cfg")
+    mbot     = os.path.join(local_bots, f"mbot_{magic}.cfg")
 
     # Crear o actualizar mreg_*.cfg
     if not os.path.exists(mreg):

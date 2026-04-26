@@ -1,0 +1,9 @@
+Pon aqui los archivos mreg_*.cfg de tus bots.
+El dashboard los detecta automaticamente.
+
+Formato del archivo (ejemplo: mreg_12345.cfg):
+MAGIC=12345
+NAME=Crash 500
+SYMBOL=Crash 500 Index
+EA=crash500
+ENABLED=1
