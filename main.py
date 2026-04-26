@@ -209,8 +209,10 @@ def discover_bots():
             try:
                 magic = int(data.get("MAGIC", 0))
             except Exception:
-                magic = 0
-            key    = fname[5:-4]  # nombre del archivo sin mreg_ y .cfg
+                continue
+            if not magic:
+                continue
+            key = str(magic)
             ea_key = str(data.get("EA", f"bot_{key}")).lower().strip()
             icon, color = _BOT_ICONS.get(ea_key, ("🤖", "#7c3aed"))
             found[key] = {
@@ -584,6 +586,7 @@ def get_state(user=Depends(get_current_user)):
                 "color":    bot["color"],
                 "symbol":   bot.get("symbol", ""),
                 "ea":       bot.get("ea", ""),
+                "magic":    bot["magic"],
                 "enabled":  enabled,
                 "position": open_pos,
                 "today":    {"pnl": round(day_pnl, 2), "wins": wins, "losses": losses, "ops": wins + losses},
@@ -627,9 +630,10 @@ def get_bots(user=Depends(get_current_user)):
                     wins += 1 if pnl >= 0 else 0
                     losses += 0 if pnl >= 0 else 1
         result[bot_id] = {
-            "name":    bot["name"],   "icon":   bot["icon"],
-            "color":   bot["color"],  "symbol": bot.get("symbol", ""),
-            "enabled": enabled,       "position": open_pos,
+            "name":    bot["name"],   "icon":    bot["icon"],
+            "color":   bot["color"],  "symbol":  bot.get("symbol", ""),
+            "magic":   bot["magic"],  "enabled": enabled,
+            "position": open_pos,
             "today":   {"pnl": round(day_pnl, 2), "wins": wins, "losses": losses, "ops": wins + losses},
         }
     return result

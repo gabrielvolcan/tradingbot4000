@@ -42,19 +42,23 @@ seen = {}
 positions = mt5.positions_get()
 if positions:
     for p in positions:
-        key = p.magic if p.magic else f"sym_{p.symbol.replace(' ','_')}"
-        if key not in seen:
-            seen[key] = {"magic": p.magic, "symbol": p.symbol, "source": "posicion activa"}
+        if p.magic and p.magic not in seen:
+            seen[p.magic] = {"magic": p.magic, "symbol": p.symbol, "source": "posicion activa"}
 
 from_dt = datetime.combine(date.today() - timedelta(days=30), datetime.min.time())
 deals = mt5.history_deals_get(from_dt, datetime.now())
 if deals:
     for d in deals:
-        key = d.magic if d.magic else f"sym_{d.symbol.replace(' ','_')}"
-        if key not in seen:
-            seen[key] = {"magic": d.magic, "symbol": d.symbol, "source": "historial"}
+        if d.magic and d.magic not in seen:
+            seen[d.magic] = {"magic": d.magic, "symbol": d.symbol, "source": "historial"}
 
 mt5.shutdown()
+
+# Limpiar archivos sym_* viejos (magic=0) que ya no sirven
+for fname in os.listdir(local_bots):
+    if fname.startswith("mreg_sym_") and fname.endswith(".cfg"):
+        os.remove(os.path.join(local_bots, fname))
+        print(f"  [eliminado] {fname} (magic=0, no controlable)")
 
 if not seen:
     print("No se encontraron bots en posiciones abiertas ni en historial de 30 dias.")
