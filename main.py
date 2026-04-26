@@ -550,7 +550,23 @@ def get_state(user=Depends(get_current_user)):
             )
 
         all_deals = deals
-        for bot_id, bot in BOTS.items():
+
+        # Merge registered bots + bots inferred from open positions
+        effective_bots = dict(BOTS)
+        if raw_pos:
+            for p in raw_pos:
+                key = str(p.magic) if p.magic else f"manual_{p.ticket}"
+                if key not in effective_bots:
+                    effective_bots[key] = {
+                        "name":   f"Bot {p.magic}" if p.magic else f"Manual ({p.symbol})",
+                        "magic":  p.magic,
+                        "symbol": p.symbol,
+                        "icon":   "🤖",
+                        "color":  "#7c3aed",
+                        "ea":     "",
+                    }
+
+        for bot_id, bot in effective_bots.items():
             enabled  = read_ctrl(bot["magic"])
             open_pos = None
             if raw_pos:
