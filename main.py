@@ -823,6 +823,19 @@ def get_watchlist(user=Depends(get_current_user)):
     return sorted(result, key=lambda x: x["symbol"])
 
 
+# ── Debug ──────────────────────────────────────────────────────────────────────
+
+@app.get("/api/debug", include_in_schema=False)
+def debug_info():
+    dirs = _all_mt5_files_dirs()
+    result = {}
+    for d in dirs:
+        files = os.listdir(d) if os.path.isdir(d) else []
+        mreg  = [f for f in files if f.startswith("mreg_") and f.endswith(".cfg")]
+        result[d] = {"existe": os.path.isdir(d), "mreg_files": mreg}
+    return {"bots_detectados": list(BOTS.keys()), "carpetas": result}
+
+
 # ── Static ─────────────────────────────────────────────────────────────────────
 
 @app.get("/", include_in_schema=False)
