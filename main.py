@@ -169,37 +169,49 @@ def _best_filling(symbol: str) -> int:
 _last_discover = 0.0
 
 
+def _all_mt5_files_dirs() -> list[str]:
+    """Devuelve todas las carpetas MQL5/Files de todos los terminales MT5 instalados."""
+    dirs = []
+    primary = get_files_dir()
+    if primary:
+        dirs.append(primary)
+    base = os.path.join(os.environ.get("APPDATA", ""), "MetaQuotes", "Terminal")
+    if os.path.isdir(base):
+        for entry in os.listdir(base):
+            candidate = os.path.join(base, entry, "MQL5", "Files")
+            if os.path.isdir(candidate) and candidate not in dirs:
+                dirs.append(candidate)
+    return dirs
+
+
 def discover_bots():
     global BOTS, _last_discover
     now = _time.time()
     if now - _last_discover < 10:
         return
     _last_discover = now
-    d = get_files_dir()
-    if not d or not os.path.isdir(d):
-        return
     found = {}
-    for fname in os.listdir(d):
-        if not fname.startswith("mreg_") or not fname.endswith(".cfg"):
-            continue
-        data = read_cfg_file(os.path.join(d, fname))
-        try:
-            magic = int(data.get("MAGIC", 0))
-        except Exception:
-            continue
-        if not magic:
-            continue
-        ea_key = str(data.get("EA", f"bot_{magic}")).lower().strip()
-        icon, color = _BOT_ICONS.get(ea_key, ("🤖", "#7c3aed"))
-        found[str(magic)] = {
-            "name":   str(data.get("NAME", f"Bot {magic}")),
-            "magic":  magic,
-            "symbol": str(data.get("SYMBOL", "")),
-            "icon":   icon,
-            "color":  color,
-            "ea":     ea_key,
-        }
-
+    for d in _all_mt5_files_dirs():
+        for fname in os.listdir(d):
+            if not fname.startswith("mreg_") or not fname.endswith(".cfg"):
+                continue
+            data = read_cfg_file(os.path.join(d, fname))
+            try:
+                magic = int(data.get("MAGIC", 0))
+            except Exception:
+                continue
+            if not magic:
+                continue
+            ea_key = str(data.get("EA", f"bot_{magic}")).lower().strip()
+            icon, color = _BOT_ICONS.get(ea_key, ("🤖", "#7c3aed"))
+            found[str(magic)] = {
+                "name":   str(data.get("NAME", f"Bot {magic}")),
+                "magic":  magic,
+                "symbol": str(data.get("SYMBOL", "")),
+                "icon":   icon,
+                "color":  color,
+                "ea":     ea_key,
+            }
     BOTS.clear()
     BOTS.update(found)
 
